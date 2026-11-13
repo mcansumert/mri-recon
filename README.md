@@ -23,7 +23,7 @@ Four methods share `E`:
 
 Coil compression keeps eight virtual coils. The last convolution of the CNN starts at zero, and the data-consistency weight starts near 0.018, so an untrained network stays near the SENSE solution. Each of the four settings below has its own checkpoint, trained for one epoch on the training files only.
 
-A C++ extension implements the coil forward map, the adjoint combination, and the phase-encode mask. The Fourier transform stays in PyTorch. On a synthetic array the C++ results match PyTorch with maximum absolute error 0.
+The reported reconstructions use the PyTorch operators. `cpp/` is an optional numerical check of the coil forward map, the adjoint combination, and the phase-encode mask. The Fourier transform stays in PyTorch. On a synthetic array the C++ results match PyTorch with maximum absolute error 0. The training and evaluation scripts do not call this extension.
 
 ## Held-out test
 
@@ -49,13 +49,17 @@ PSNR (dB) and SSIM on the same slices:
 
 ![Test SSIM](figures/test_ssim.png)
 
-Two patterns repeat. At a fixed acceleration, variable-density sampling leaves a lower zero-filled error than a regular lattice. Raising the acceleration from 4 to 6 raises the error of every method. SSIM still favors zero-filling: the network reduces energy error and does not win structural similarity. CG-SENSE with a 24-line calibration loses to zero-filling on the equispaced masks. That is a limit of this coil estimate. Forcing the learned weight near zero makes the same unrolled graph match CG-SENSE (validation NMSE 0.0118 against 0.0119 on four slices).
+Two patterns repeat. At a fixed acceleration, variable-density sampling leaves a lower zero-filled error than a regular lattice. Raising the acceleration from 4 to 6 raises the error of every method. SSIM still favors zero-filling: the network reduces energy error and does not win structural similarity.
+
+Each number is the mean of per-slice scores. NMSE divides the squared error by the energy of that slice. PSNR uses the absolute error and the peak of that slice, then a logarithm. At R=4 variable density the unrolled NMSE is 0.0253 against a zero-filled 0.0305, while PSNR moves from 29.09 dB to 28.92 dB. Those two reductions do not have to rank the methods the same way. SSIM uses a uniform 7×7 window. These values are separate from the fastMRI challenge SSIM.
+
+CG-SENSE runs eight iterations. Sensitivities come from 24 central phase-encode lines of the masked data for that scan. On the equispaced masks this estimate loses to zero-filling. The TV method is thirty gradient steps of isotropic total variation in `src/mri_recon/cs.py`. SigPy is not part of the solver. Forcing the learned data-consistency weight near zero makes the same unrolled graph match CG-SENSE (validation NMSE 0.0118 against 0.0119 on four slices).
 
 ![Training loss, 15-slice mean](figures/train_loss.png)
 
 ## One slice is not the table
 
-These four figures are the central slice of test volume `file1001930.h5`. The top row is the image. The bottom row is the absolute error against the fully sampled reference. The NMSE printed under each error map belongs to this slice only. The 40-volume mean can rank the methods differently, because other slices carry more aliasing. Purple is a small error and yellow is a large one. The bright end of the scale is the largest zero-filled error on this slice.
+These four figures are the central slice of the first test volume, `file1001930.h5`. They were not chosen to match the table. On this slice the unrolled network is often the worst of the four: the slice is easy, and TV and CG-SENSE already remove most of the aliasing. The top row is the image. The bottom row is the absolute error against the fully sampled reference. The NMSE under each error map belongs to this slice only. The result is the mean over 40 test volumes, where the unrolled network has the lowest NMSE in every cell. Purple is a small error and yellow is a large one. The bright end of the scale is the largest zero-filled error on this slice.
 
 ![R=4 equispaced](figures/r4_equispaced.png)
 
@@ -67,7 +71,7 @@ These four figures are the central slice of test volume `file1001930.h5`. The to
 
 ## What this is not
 
-This is not a clinical study, not a device validation, and not an official fastMRI challenge submission. The archive is the public validation release only, not the full training set. Scores use one central slice per volume. Training was one epoch, 278 slices, about 94 thousand parameters. ESPIRiT, motion, 3D, and non-Cartesian trajectories are outside this repository. Raw k-space is not stored here. The fastMRI license forbids redistributing it.
+This is not a clinical study, not a device validation, and not an official fastMRI challenge submission. The archive is the public validation release only, not the full training set. Scores use one central slice per volume. Training was one epoch on 278 slices, about 94 thousand parameters. The data-consistency weight stays near its start value of about 0.018, and the loss flattens after the first steps. The test table belongs to that run. ESPIRiT, motion, 3D, and non-Cartesian trajectories are outside this repository. Raw k-space is not stored here. The fastMRI license forbids redistributing it.
 
 ## Checks that do not use fastMRI
 
@@ -78,6 +82,20 @@ A synthetic 192×192, 8-coil phantom: FFT round-trip error `2.5e-07`, fully samp
 ```text
 src/mri_recon/    operators, masks, classical solvers, unrolled model
 scripts/          checks, training, evaluation, figures
-cpp/              coil and mask kernel
+cpp/              optional coil and mask check
 figures/          test charts and slice comparisons
-Dockerfile        PyTorch image plus h5py, matplotlib, and sigpy
+Dockerfile        PyTorch image plus h5py and matplotlib
+```
+
+## Run
+
+Synthetic checks need no fastMRI files. The image does not copy the source. The mount supplies it. PyTorch is already in the base image.
+
+```powershell
+docker build -t mri-recon:dev .
+docker run --rm -v "${PWD}:/work" -w /work -e PYTHONPATH=/work/src mri-recon:dev python scripts/run_synth_check.py
+```
+
+In bash, use `"$(pwd)"` in place of `"${PWD}"`.
+
+A local environment can install the extra packages from `requirements.txt`. Training and the reported evaluation need the fastMRI knee multi-coil validation volumes, passed as `--data-root`. Those files are not in this repository. The test split stays closed unless `--confirm-final-test` is passed, and that flag is for a final report only.
