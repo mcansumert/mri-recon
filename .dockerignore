@@ -1,0 +1,7 @@
+data
+checkpoints
+**/*.h5
+**/*.tar.xz
+**/*.tar.gz
+.git
+**/__pycache__

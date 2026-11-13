@@ -1,0 +1,16 @@
+data/
+*.h5
+*.tar
+*.tar.xz
+*.tar.gz
+__pycache__/
+*.pyc
+.venv/
+checkpoints/
+torch-ok.txt
+write-test.txt
+.env
+*.pyd
+*.so
+build/
+*.egg-info/

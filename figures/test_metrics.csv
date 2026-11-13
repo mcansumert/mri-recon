@@ -1,0 +1,17 @@
+case,method,NMSE,PSNR,SSIM
+R4 equispaced,zero_fill,0.042,26.81,0.711
+R4 equispaced,tv_cs,0.0364,28.36,0.67
+R4 equispaced,cg_sense,0.049,27.37,0.571
+R4 equispaced,unrolled,0.0312,28.3,0.685
+R4 variable,zero_fill,0.0305,29.09,0.767
+R4 variable,tv_cs,0.0355,29.01,0.72
+R4 variable,cg_sense,0.0351,29.05,0.689
+R4 variable,unrolled,0.0253,28.92,0.742
+R6 equispaced,zero_fill,0.0503,26.0,0.662
+R6 equispaced,tv_cs,0.0434,26.84,0.626
+R6 equispaced,cg_sense,0.0518,26.23,0.536
+R6 equispaced,unrolled,0.0401,26.84,0.63
+R6 variable,zero_fill,0.0402,27.38,0.707
+R6 variable,tv_cs,0.0381,28.23,0.686
+R6 variable,cg_sense,0.0378,28.28,0.65
+R6 variable,unrolled,0.03,28.2,0.694
