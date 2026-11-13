@@ -27,7 +27,7 @@ The reported reconstructions use the PyTorch operators. `cpp/` is an optional nu
 
 ## Held-out test
 
-The public fastMRI knee multi-coil validation release has 199 volumes. Files are split by name, never by slice: 139 train, 20 validation, 40 test. Training never opened the test files. The data-consistency weight was chosen on validation. The test split was then read once.
+The public fastMRI knee multi-coil validation release has 199 volumes. Files are split by name, never by slice: 139 train, 20 validation, 40 test. Training never opened the test files. The data-consistency weight is learned; it stays near its start value. The test split was then read once.
 
 The table is one central slice from each of the 40 test volumes. Lower NMSE is better. The unrolled network has the lowest NMSE in every cell.
 
